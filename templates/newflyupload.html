@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html>
+    <!-- Page where users can upload a fly image -->
+    <head>
+        <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+        <title> DeepEyeFlyAI </title>
+        <style>
+            #editormodal {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.85);
+                z-index: 999;
+                align-items: flex-start;
+                justify-content: center;
+                overflow-y: auto;
+                padding: 40px 20px;
+            }
+
+            #editormodal.open {
+                display: flex;
+            }
+
+            .modal-box {
+                background: black;
+                border: 2px solid #ff3300;
+                border-radius: 10px;
+                padding: 30px 34px;
+                max-width: 600px;
+                width: 100%;
+                text-align: center;
+                font-family: sans-serif;
+                color: white;
+            }
+
+            .modal-box h2 {
+                font-size: 20px;
+                margin-bottom: 10px;
+                color: white;
+            }
+
+            .modal-box p {
+                font-size: 13px;
+                color: #aaa;
+                line-height: 1.5;
+                margin-bottom: 18px;
+            }
+
+            .modal-preview {
+                width: 100%;
+                border: 2px solid #ff3300;
+                border-radius: 8px;
+                overflow: hidden;
+                margin-bottom: 20px;
+                background: #111;
+            }
+
+            .modal-preview img {
+                width: 100%;
+                height: auto;
+                display: block;
+            }
+
+            .modal-stats {
+                display: flex;
+                justify-content: center;
+                gap: 32px;
+                margin-bottom: 22px;
+            }
+
+            .mstat-val {
+                font-size: 28px;
+                font-weight: bold;
+                color: #ff3300;
+                display: block;
+            }
+
+            .mstat-lbl {
+                font-size: 11px;
+                color: #888;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+            }
+
+            .modal-btns {
+                display: flex;
+                gap: 12px;
+                justify-content: center;
+            }
+
+            .mbtn {
+                padding: 12px 28px;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: bold;
+                cursor: pointer;
+                font-family: sans-serif;
+                transition: 0.2s;
+            }
+
+            .mbtn-edit {
+                background: #ff3300;
+                color: black;
+                border: 2px solid #ff3300;
+            }
+
+            .mbtn-edit:hover {
+                background: black;
+                color: #ff3300;
+            }
+
+            .mbtn-skip {
+                background: black;
+                border: 2px solid #ff3300;
+                color: white;
+            }
+
+            .mbtn-skip:hover {
+                background: #ff3300;
+                color: black;
+            }
+
+            .queue-badge {
+                display: inline-block;
+                background: #ff3300;
+                color: black;
+                font-weight: bold;
+                font-size: 12px;
+                border-radius: 20px;
+                padding: 2px 10px;
+                margin-bottom: 12px;
+                letter-spacing: 0.5px;
+            }
+
+            #fileList {
+                list-style: none;
+                padding: 0;
+                margin: 10px auto;
+                max-width: 400px;
+                text-align: left;
+            }
+
+            #fileList li {
+                font-size: 13px;
+                color: #ccc;
+                padding: 4px 8px;
+                border-left: 3px solid #ff3300;
+                margin-bottom: 4px;
+                background: rgba(255,51,0,0.07);
+                border-radius: 0 4px 4px 0;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            #fileList li.active-file {
+                color: white;
+                border-left-color: #ff3300;
+                background: rgba(255,51,0,0.18);
+                font-weight: bold;
+            }
+
+            #fileList li.done-file {
+                color: #555;
+                border-left-color: #333;
+                text-decoration: line-through;
+            }
+
+            #fileList li .file-status {
+                font-size: 11px;
+                color: #888;
+            }
+
+            #fileList li.active-file .file-status {
+                color: #ff3300;
+            }
+
+            #fileList li.done-file .file-status {
+                color: #3a3;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>DeepEyeFlyAI</h1>
+        <ul class="topnav">
+            <li><a href="{{ url_for('newflyweb') }}">Home</a></li>
+            <li><a href="{{ url_for('fprocess') }}">The Process</a></li>
+            <li><a href="{{ url_for('newflyupload') }}">Upload for Eye</a></li>
+            <li><a href="{{ url_for('ODA') }}">Upload for Odometry</a></li>
+            <li><a href="{{ url_for('flywelfare') }}">Fly Welfare</a></li>
+            <li><a href="{{ url_for('resultsf') }}">Eye Head Results</a></li>
+            <li><a href="{{ url_for('oda_results') }}">ODA Results</a></li>
+            <li><a href="{{ url_for('timespan') }}">Timespan Viewer</a></li>
+            <li><a href="{{ url_for('export') }}">Export Data</a></li>
+
+            {% if session.get("user") %}
+                <li class="right">
+                    <a href="{{ url_for('logout') }}">Logout ({{ session.get("user") }})</a>
+                </li>
+            {% else %}
+                <li class="right">
+                    <a href="{{ url_for('flogin') }}">Login</a>
+                </li>
+            {% endif %}
+        </ul>
+
+        <h1>Upload Image</h1>
+
+        <center>
+            <a href="/fuploadfolder" class="upload-btn">Click here to swap to quick folder mode</a>
+        </center>
+        <form action="/upload" method="post" enctype="multipart/form-data" class="upload-form">
+            <div class="image-preview" id="imagePreview">
+                <span>Please upload one or more images!</span>
+            </div>
+
+            <!-- Multiple files allowed -->
+            <input type="file" id="myFile" name="filename" hidden multiple>
+
+            <!-- File queue list shown after selection -->
+            <ul id="fileList" style="display:none;"></ul>
+
+            {% if session.get("user") %}
+                <select name="image_origin" class="upload-btn" required>
+                    <option value="">Select Country</option>
+                    {% for country in countries %}
+                        <option value="{{ country }}">{{ country }}</option>
+                    {% endfor %}
+                </select>
+                <input type="date" name="image_date" class="upload-btn" required>
+                <br>
+                Real world image width:
+                <input type="number" name="image_size" class="upload-btn" placeholder="1" min="1" max="9999" required>
+                <select name="image_scale" class="upload-btn" required>
+                    <option value="nm">nanometer (nm)</option>
+                    <option value="um">micrometer (μm)</option>
+                </select>
+                <select name="type_of_image" class="upload-btn" required>
+                    <option value="full_image">Full image width</option>
+                    <option value="per_pixel">Per pixel width</option>
+                </select>
+                <br>
+                <label for="myFile" class="upload-btn">Upload Fly Image(s)</label>
+                <button type="submit" id="analyseBtn" class="upload-btn" style="display:none;">Analyse Images</button>
+                <button type="button" id="changeBtn" class="upload-btn" style="display:none;">Unselect Images</button>
+            {% else %}
+                <a href="/login" class="upload-btn">PLEASE LOGIN TO UPLOAD IMAGES</a>
+            {% endif %}
+        </form>
+
+        {% if message %}
+            <p class="upload-message" style="text-align:center;">{{ message }}</p>
+        {% endif %}
+
+        {% if detections %}
+        <div id="editormodal" class="open">
+            <div class="modal-box">
+                <h2>Detection Complete</h2>
+
+                {# Queue progress indicator #}
+                {% if queue_index is defined and queue_total is defined and queue_total > 1 %}
+                <div>
+                    <span class="queue-badge">Image {{ queue_index + 1 }} of {{ queue_total }}</span>
+                </div>
+                {% endif %}
+
+                <p>
+                    Found {{ detections|length }} polygon{{ 's' if detections|length != 1 }} in
+                    <strong>{{ current_filename }}</strong>.
+                    Review the detections below, then choose whether to edit the polygons or save as is.
+                    {% if queue_total is defined and queue_total > 1 %}
+                    The remaining {{ queue_total - queue_index - 1 }} image(s) will be processed afterwards.
+                    {% endif %}
+                </p>
+
+                {% if annotated_image %}
+                <div class="modal-preview">
+                    <img src="/static/uploads/{{ annotated_image.split('/')[-1].split('\\')[-1] }}" alt="Annotated result">
+                </div>
+                {% endif %}
+
+                <div class="modal-stats">
+                    <div>
+                        <span class="mstat-val">{{ detections|length }}</span>
+                        <span class="mstat-lbl">Detected</span>
+                    </div>
+                    <div>
+                        <span class="mstat-val">{{ (detections | map(attribute='confidence') | list | sum / detections|length * 100) | round(0) | int }}%</span>
+                        <span class="mstat-lbl">Avg Confidence</span>
+                    </div>
+                    {% if queue_total is defined and queue_total > 1 %}
+                    <div>
+                        <span class="mstat-val">{{ queue_total - queue_index - 1 }}</span>
+                        <span class="mstat-lbl">Remaining</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="modal-btns">
+                    <button type="button" class="mbtn mbtn-edit" onclick="goEditor()">Edit Polygons</button>
+                    <button type="button" class="mbtn mbtn-skip" onclick="skipEditor()">Save As Is</button>
+                    <button 
+                        class="mbtn mbtn-skip-all" 
+                        style="background-color: #6c757d; color: white;"
+                        onclick="if(confirm('This will process all remaining eye images using current detections and will only allow editing at results. Continue?')) { location.href='/skip_all_eye_detections'; }">
+                        Skip All & View Results
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            function goEditor() {
+                window.location.href = '/polygon_editor';
+            }
+            function skipEditor() {
+                document.getElementById('editormodal').classList.remove('open');
+                window.location.href = '/save_as_is';
+            }
+        </script>
+        {% endif %}
+
+        <script src="{{ url_for('static', filename='UTIF.js') }}"></script>
+        <script src="{{ url_for('static', filename='script.js') }}"></script>
+    </body>
+</html>

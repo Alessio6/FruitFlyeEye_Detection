@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/utif@3.1.0/UTIF.min.js"></script>
+    <meta charset="UTF-8">
+    <title>Polygon Editor - DeepEyeFlyAI</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: midnightblue;
+            color: white;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #topbar {
+            background: darkslateblue;
+            border-bottom: 1px solid dimgray;
+            padding: 10px 18px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-shrink: 0;
+        }
+
+        #topbar h3 {
+            font-size: 14px;
+            font-weight: normal;
+        }
+
+        #polycount {
+            margin-left: auto;
+            font-size: 12px;
+        }
+
+        #workspace {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        #canvaswrap {
+            flex: 1;
+            background: black;
+            overflow: hidden;
+            position: relative;
+            cursor: crosshair;
+        }
+
+        #maincanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: 0 0;
+        }
+
+        #sidebar {
+            width: 240px;
+            background: darkslateblue;
+            border-left: 1px solid dimgray;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sblabel {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 12px 14px 6px;
+        }
+
+        #hints {
+            padding: 0 14px 12px;
+            border-bottom: 1px solid dimgray;
+        }
+
+        #hints p {
+            font-size: 11px;
+            margin-bottom: 4px;
+            line-height: 1.4;
+        }
+
+        #infobox {
+            padding: 10px 14px;
+            border-bottom: 1px solid dimgray;
+            min-height: 70px;
+        }
+
+        #infobox p {
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        #infobox .classname {
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        #polylist {
+            flex: 1;
+            overflow-y: auto;
+            padding: 6px;
+        }
+
+        .polyitem {
+            padding: 8px 10px;
+            border-radius: 5px;
+            border: 1px solid dimgray;
+            margin-bottom: 5px;
+            cursor: pointer;
+            background: midnightblue;
+            transition: border-color 0.1s;
+        }
+
+        .polyitem:hover {
+            border-color: slategray;
+        }
+
+        .polyitem.active {
+            border-color: limegreen;
+            background: rgba(50, 205, 50, 0.06);
+        }
+
+        .polyitem .ptop {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .polyitem .pname {
+            font-size: 12px;
+            font-weight: bold;
+            flex: 1;
+        }
+
+        .polyitem .pconf {
+            font-size: 11px;
+        }
+
+        .polyitem .pmeta {
+            font-size: 11px;
+            padding-left: 15px;
+            margin-top: 2px;
+        }
+
+        #btnarea {
+            padding: 14px;
+            border-top: 1px solid dimgray;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        #zoomlabel {
+            font-size: 11px;
+            text-align: right;
+            padding: 4px 14px 0;
+        }
+
+        button {
+            padding: 9px 14px;
+            border-radius: 5px;
+            border: none;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        #btnreset {
+            background: #4040ee;
+            border: 1px solid dimgray;
+            color: white;
+        }
+
+        #btnreset:hover {
+            border-color: tomato;
+            color: tomato;
+        }
+
+        #btnfinish {
+            background: limegreen;
+            color: white;
+        }
+
+        #btnfinish:hover {
+            background: lightgreen;
+        }
+
+        #btnfinish:disabled {
+            background: dimgray;
+            color: white;
+            cursor: default;
+        }
+
+        #loader {
+            position: fixed;
+            inset: 0;
+            background: midnightblue;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            z-index: 99;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        #toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(60px);
+            background: darkslateblue;
+            border: 1px solid dimgray;
+            border-radius: 6px;
+            padding: 8px 18px;
+            font-size: 13px;
+            color: white;
+            transition: transform 0.25s ease;
+            pointer-events: none;
+            z-index: 200;
+        }
+
+        #toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        #toast.err {
+            border-color: tomato;
+            color: tomato;
+        }
+    </style>
+</head>
+<body>
+
+<div id="loader">
+    <p>Opening Editor</p>
+</div>
+
+<div id="topbar">
+    <strong style="color: #ff3300; font-size: 14px;">DeepEyeFlyAI</strong>
+    <h3>Image Name: <span id="fname">...</span></h3>
+    <span id="polycount">0 polygons</span>
+</div>
+
+<div id="workspace">
+    <div id="canvaswrap">
+        <canvas id="maincanvas"></canvas>
+    </div>
+
+    <div id="sidebar">
+        <div class="sblabel">Controls</div>
+        <div id="hints">
+            <p>Drag a point to move it</p>
+            <p>Double click on an edge to add a point</p>
+            <p>Right click a point to delete it</p>
+            <p>Scroll to zoom</p>
+	        <p>Hold down the scroll wheel to pan</p>
+            <p>Click inside a polygon to select it</p>
+            <p>C to centre the image</p>
+	        <p>Escape to deselect</p>
+	        <p>Z to undo</p>
+        </div>
+
+        <div class="sblabel">Selected</div>
+        <div id="infobox">
+            <p id="infonone">Nothing selected</p>
+            <div id="infodetail" style="display: none;">
+                <p class="classname" id="infoclass">-</p>
+                <p>Confidence: <span id="infoconf">-</span></p>
+                <p>Points: <span id="infopts">-</span></p>
+            </div>
+        </div>
+
+        <div class="sblabel">Detections</div>
+        <div id="polylist"></div>
+
+        <div id="zoomlabel">Zoom: 100%</div>
+        <div id="btnarea">
+            <button id="btnreset">Reset All</button>
+	    <button id="btnfinish">Finish & Save</button>
+        </div>
+    </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+    // We use the 'data' variable we sent in the 'render_template' call
+    // The | default({}) is a safety net so it never sends 'Undefined'
+    window.EDITOR_DATA = {{ data | default({}) | tojson }};
+    console.log("Global Data Loaded:", window.EDITOR_DATA);
+</script>
+<script src="/static/polygon_editor.js"></script>
+
+</body>
+</html>

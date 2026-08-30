@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+        <title> DeepEyeFlyAI - ODA Results </title>
+        <style>
+            /* Specific ODA styling integrated with Results layout */
+            .oda-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 15px;
+                margin-top: 15px;
+            }
+            .stat-box {
+                background: #1a1a1a;
+                padding: 12px;
+                border-radius: 8px;
+                text-align: center;
+                border-left: 4px solid #ff3300;
+            }
+            .stat-val {
+                display: block;
+                font-size: 20px;
+                font-weight: bold;
+                color: #ff3300;
+            }
+            .stat-lbl {
+                font-size: 10px;
+                text-transform: uppercase;
+                color: #888;
+            }
+            /* Checkbox styling to match Results page */
+            .compare-checkbox, .select-checkbox {
+                position: absolute;
+                top: 10px;
+                left: 10px;
+                z-index: 10;
+                transform: scale(1.5);
+                display: none;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>DeepEyeFlyAI</h1>
+        <ul class="topnav">
+            <li><a href="{{ url_for('newflyweb') }}">Home</a></li>
+            <li><a href="{{ url_for('fprocess') }}">The Process</a></li>
+            <li><a href="{{ url_for('newflyupload') }}">Upload for Eye</a></li>
+            <li><a href="{{ url_for('ODA') }}">Upload for Odometry</a></li>
+            <li><a href="{{ url_for('flywelfare') }}">Fly Welfare</a></li>
+            <li><a href="{{ url_for('resultsf') }}">Eye Head Results</a></li>
+            <li><a href="{{ url_for('oda_results') }}">ODA Results</a></li>
+            <li><a href="{{ url_for('timespan') }}">Timespan Viewer</a></li>
+            <li><a href="{{ url_for('export') }}">Export Data</a></li>
+            
+            {% if session.get("user") %}
+                <li class="right">
+                    <a href="{{ url_for('logout') }}">Logout ({{ session.get("user") }})</a>
+                </li>
+            {% else %}
+                <li class="right">
+                    <a href="{{ url_for('flogin') }}">Login</a>
+                </li>
+            {% endif %}
+        </ul>  
+
+        <h1 style="text-align: center;">Ommatidial Diameter Analysis Records</h1>
+
+        {% if session.get("user") %}
+        <div style="margin-bottom: 20px; display: flex; gap: 15px; justify-content: center;">
+            <button type="button" id="compareBtn" class="upload-btn">Compare Two Analyses</button>
+            <button type="button" id="filterBtn" class="upload-btn">Filter Records</button>
+            <button type="button" id="selectBtn" class="upload-btn">Select Records</button>
+        </div>
+
+        <div id="filterOptions" style="display:none; text-align:center; margin-bottom:20px;">
+            <div style="margin-bottom:15px;">
+                <label>Country: 
+                    <select id="filterCountry">
+                        <option value="" disabled selected>Choose a country</option>
+                        {% for country in countries %}<option value="{{ country }}">{{ country }}</option>{% endfor %}
+                    </select>
+                </label>
+            </div>
+            <div style="margin-bottom:15px;">
+                <label>Date From: <input type="date" id="filterDateFrom"></label>
+                <label>Date To: <input type="date" id="filterDateTo"></label>
+            </div>
+            <button type="button" id="applyFilters">Apply Filters</button>
+            <button type="button" id="removeFilters" style="display:none;">Remove Filters</button>
+        </div>
+
+        <div id="selectActionContainer" style="text-align:center; margin-bottom:20px; display:none;">
+            <div style="display:inline-flex; gap:15px; align-items:center;">
+                <button id="exportODACsvBtn" class="upload-btn">Export Selected ODA to CSV</button>
+                
+                <form id="makePublicForm" action="/make_oda_public" method="post" style="display:contents;">
+                    <input type="hidden" id="publicIdsInput" name="ids">
+                    <button type="submit" class="upload-btn">Make ODA Public</button>
+                </form>
+                
+                <form id="makePrivateForm" action="/make_oda_private" method="post" style="display:contents;">
+                    <input type="hidden" id="privateIdsInput" name="ids">
+                    <button type="submit" class="upload-btn">Make ODA Private</button>
+                </form>
+
+                <form id="deleteSelectedForm" action="/delete_results_oda" method="post" style="display:contents;">
+                    <input type="hidden" id="deleteIdsInput" name="ids">
+                    <button type="submit" class="upload-btn" style="background-color: #cc0000;">Delete Selected</button>
+                </form>
+            </div>
+        </div>
+
+        <div id="compareActionContainer" style="text-align:center; margin-bottom:20px; display:none;">
+            <button id="compareODAImagesBtn" class="upload-btn">Compare Selected ODA</button>
+        </div>
+
+        <hr style="margin: 30px 0; border: 2px solid white;">
+
+        {% if results %}
+            {% for row in results %}
+            <div class="content-container">
+                <div class="content-row" style="position: relative;" data-country="{{ row.origin }}" data-date="{{ row.date }}"> 
+                    
+                    <input type="checkbox" class="compare-checkbox" data-id="{{ row.id }}"> 
+                    <input type="checkbox" class="select-checkbox" data-id="{{ row.id }}"> 
+                    
+                    <div class="oda-image-container">
+                        <img src="/{{ row.annotated_image }}" alt="Heatmap" width="500" class="image-padding">
+                        <p style="text-align:center; font-size: 11px; color: #888;">FILE: {{ row.image_path.split('/')[-1] }}</p>
+                    </div>
+
+                    <div class="text-box"> 
+                        <h2>ODA Analysis Result</h2> 
+                        <p><strong>Location:</strong> {{ row.origin }}</p> 
+                        <p><strong>Date:</strong> {{ row.date }}</p> 
+                        
+                        <div class="oda-grid">
+                            <div class="stat-box">
+                                <span class="stat-val">{{ row.stats.count }}</span>
+                                <span class="stat-lbl">Count</span>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-val">{{ "%.2f"|format(row.stats.diameter) }}</span>
+                                <span class="stat-lbl">Avg Dia (μm)</span>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-val">±{{ "%.2f"|format(row.stats.sd) }}</span>
+                                <span class="stat-lbl">Std. Dev</span>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-val">{{ row.stats.area }}</span>
+                                <span class="stat-lbl">Area (μm²)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-box" style="margin-top: 10px;">
+                        <p>Uploaded by: <strong>{{ row.stats.owner }}</strong></p>
+                        
+                        {% if row.public == 1 or row.public == True %}
+                            <p style="color: limegreen; font-weight: bold; font-size: 16px;">Public</p>
+                        {% else %}
+                            <p style="color: tomato; font-weight: bold; font-size: 16px;">Private</p>
+                        {% endif %}
+                        
+                        <a href="/{{ row.image_path }}" class="upload-btn" style="font-size: 11px; margin-top:10px; display:inline-block;">Download Original</a>
+                    </div>
+                </div> 
+                <hr style="margin: 30px 0; border: 2px solid white;"> 
+            </div>
+            {% endfor %}
+        {% else %}
+            <p style="text-align:center;">No ODA results found.</p>
+        {% endif %}
+
+        <script src="{{ url_for('static', filename='UTIF.js') }}"></script>
+        <script src="{{ url_for('static', filename='script.js') }}"></script>
+        
+        {% else %}
+        <div style="text-align:center; margin-top: 50px;">
+            <a href="/flogin" class="upload-btn">PLEASE LOGIN TO MANAGE ODA RECORDS</a>
+        </div>
+        {% endif %}
+    </body>
+</html>

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+    <!-- General results page -->
+    <head>
+        <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+        <title> DeepEyeFlyAI </title>
+    </head>
+    <body>
+        <h1>DeepEyeFlyAI</h1>
+        <ul class="topnav">
+            <li><a href="{{ url_for('newflyweb') }}">Home</a></li>
+            <li><a href="{{ url_for('fprocess') }}">The Process</a></li>
+            <li><a href="{{ url_for('newflyupload') }}">Upload for Eye</a></li>
+            <li><a href="{{ url_for('ODA') }}">Upload for Odometry</a></li>
+            <li><a href="{{ url_for('flywelfare') }}">Fly Welfare</a></li>
+            <li><a href="{{ url_for('resultsf') }}">Eye Head Results</a></li>
+            <li><a href="{{ url_for('oda_results') }}">ODA Results</a></li>
+            <li><a href="{{ url_for('timespan') }}">Timespan Viewer</a></li>
+            <li><a href="{{ url_for('export') }}">Export Data</a></li>
+            
+            {% if session.get("user") %}
+                <li class="right">
+                    <a href="{{ url_for('logout') }}">Logout ({{ session.get("user") }})</a>
+                </li>
+            {% else %}
+                <li class="right">
+                    <a href="{{ url_for('flogin') }}">Login</a>
+                </li>
+            {% endif %}
+        </ul>  
+
+        <h1>Results</h1>
+        {% if session.get("user") %}
+        <div style="margin-bottom: 20px; display: flex; gap: 15px; justify-content: center;">
+            <button type="button" id="compareBtn" class="upload-btn">Compare Two Images</button>
+            <button type="button" id="filterBtn" class="upload-btn">Filter Images</button>
+            <button type="button" id="selectBtn" class="upload-btn">Select Images</button>
+        </div>
+
+        <div id="filterOptions" style="display:none; text-align:center; margin-bottom:20px;">
+            <div style="margin-bottom:15px;">
+                <label>
+                    Country:
+                    <select id="filterCountry">
+                        <option value="" disabled selected>Choose a country</option>
+                        {% for country in countries %}
+                            <option value="{{ country }}">{{ country }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <div id="selectedCountriesContainer" style="margin-top:10px;"></div>
+                <input type="hidden" id="selectedCountriesInput" name="selected_countries">
+            </div>
+
+            <div style="margin-bottom:15px;">
+                <label>
+                    Date From:
+                    <input type="date" id="filterDateFrom">
+                </label>
+                <label>
+                    Date To:
+                    <input type="date" id="filterDateTo">
+                </label>
+            </div>
+
+            <button type="button" id="applyFilters">Apply Filters</button>
+            <button type="button" id="removeFilters" style="display:none;">Remove Filters</button>
+        </div>
+
+        <div id="compareActionContainer" style="text-align:center; margin-bottom:20px; display:none;">
+            <button id="compareImagesBtn" class="upload-btn">Compare These Images</button>
+        </div>
+
+        <div id="selectActionContainer" style="text-align:center; margin-bottom:20px; display:none;">
+            <div style="display:inline-flex; gap:15px; align-items:center;">
+                <button id="viewTimespanBtn" class="upload-btn">View Timespan of these images</button>
+                <button id="exportCsvBtn" class="upload-btn">Export these images to CSV</button>
+                <form id="makePublicForm" action="/make_public" method="post" style="display:contents;">
+                    <input type="hidden" id="publicIdsInput" name="ids">
+                    <button type="submit" class="upload-btn">Make Public</button>
+                </form>
+                <form id="makePrivateForm" action="/make_private" method="post" style="display:contents;">
+                    <input type="hidden" id="privateIdsInput" name="ids">
+                    <button type="submit" class="upload-btn">Make Private</button>
+                </form>
+ 	        <form id="deleteSelectedForm" action="/delete_results" method="post" style="display:contents;">
+    	            <input type="hidden" id="deleteIdsInput" name="ids">
+       	            <button type="submit" class="upload-btn">Delete</button>
+   	        </form>
+            </div>
+        </div>
+
+        <hr style="margin: 30px 0; border: 2px solid white;">
+
+        {% for id, image_path, annotated_image, image_origin, image_date, result in images %} 
+        <div class="content-container">
+            <div class="content-row" style="position: relative;" data-country="{{ image_origin }}" data-date="{{ image_date }}"> 
+                <input type="checkbox" class="compare-checkbox" data-id="{{ id }}"> 
+                <input type="checkbox" class="select-checkbox" data-id="{{ id }}"> 
+                <img src="/{{ annotated_image }}" alt="Uploaded Image" width="500" class="image-padding">
+                <div class="text-box"> 
+                    <h2>Analysis Result</h2> 
+                    <p>Location: {{image_origin}}</p> 
+                    <p>Date of Image Taken: {{image_date}}</p> 
+                    <p><strong>Parts Detected:</strong> {{ result.fly_count }}</p>
+                    <p><strong>Average Confidence:</strong> {{ result.confidence }}%</p> 
+                </div>
+                <div class="text-box" style="margin-top: 10px;">
+                    <p>Uploaded by: <strong>{{ result.owner }}</strong></p>
+                    {% if result.public %}
+                        <p style="color: limegreen; font-weight: bold; font-size: 16px;">Public</p>
+                        <p>This image is visible to all users</p>
+                    {% else %}
+                        <p style="color: tomato; font-weight: bold; font-size: 16px;">Private</p>
+                        <p>This image is only visible to you</p>
+                    {% endif %}
+                </div>
+            </div> 
+            <hr style="margin: 30px 0; border: 2px solid white;"> 
+        </div>
+        {% else %} 
+        <p>No images have been uploaded yet.</p> 
+        {% endfor %}
+
+        <script src="{{ url_for('static', filename='UTIF.js') }}"></script>
+        <script src="{{ url_for('static', filename='script.js') }}"></script>
+        {% else %}
+        <div style="text-align:center;">
+            <a href="/login" class="upload-btn">PLEASE LOGIN TO SEE RESULTS</a>
+        </div>
+    {% endif %}
+    </body>
+</html>

@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+        <title> DeepEyeFlyAI - ODA Folder Upload </title>
+        <style>
+            /* Base Modal Styles */
+            #editormodal {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.85);
+                z-index: 999;
+                align-items: flex-start;
+                justify-content: center;
+                overflow-y: auto;
+                padding: 40px 20px;
+            }
+
+            #editormodal.open {
+                display: flex;
+            }
+
+            .modal-box {
+                background: black;
+                border: 2px solid #ff3300;
+                border-radius: 10px;
+                padding: 30px 34px;
+                max-width: 600px;
+                width: 100%;
+                text-align: center;
+                font-family: sans-serif;
+                color: white;
+            }
+
+            .modal-box h2 {
+                font-size: 20px;
+                margin-bottom: 10px;
+                color: white;
+            }
+
+            .modal-box p {
+                font-size: 13px;
+                color: #aaa;
+                line-height: 1.5;
+                margin-bottom: 18px;
+            }
+
+            .modal-preview {
+                width: 100%;
+                border: 2px solid #ff3300;
+                border-radius: 8px;
+                overflow: hidden;
+                margin-bottom: 20px;
+                background: #111;
+            }
+
+            .modal-preview img {
+                width: 100%;
+                height: auto;
+                display: block;
+            }
+
+            .modal-stats {
+                display: flex;
+                justify-content: center;
+                gap: 32px;
+                margin-bottom: 22px;
+            }
+
+            .mstat-val {
+                font-size: 28px;
+                font-weight: bold;
+                color: #ff3300;
+                display: block;
+            }
+
+            .mstat-lbl {
+                font-size: 11px;
+                color: #888;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+            }
+
+            .modal-btns {
+                display: flex;
+                gap: 12px;
+                justify-content: center;
+            }
+
+            .mbtn {
+                padding: 12px 28px;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: bold;
+                cursor: pointer;
+                font-family: sans-serif;
+                transition: 0.2s;
+            }
+
+            .mbtn-edit { background: #ff3300; color: black; border: 2px solid #ff3300; }
+            .mbtn-edit:hover { background: black; color: #ff3300; }
+            .mbtn-skip { background: black; border: 2px solid #ff3300; color: white; }
+            .mbtn-skip:hover { background: #ff3300; color: black; }
+
+            .queue-badge {
+                display: inline-block;
+                background: #ff3300;
+                color: black;
+                font-weight: bold;
+                font-size: 12px;
+                border-radius: 20px;
+                padding: 2px 10px;
+                margin-bottom: 12px;
+                letter-spacing: 0.5px;
+            }
+
+            #fileList {
+                list-style: none;
+                padding: 0;
+                margin: 10px auto;
+                max-width: 400px;
+                text-align: left;
+            }
+
+            #fileList li {
+                font-size: 13px;
+                color: #ccc;
+                padding: 4px 8px;
+                border-left: 3px solid #ff3300;
+                margin-bottom: 4px;
+                background: rgba(255,51,0,0.07);
+                border-radius: 0 4px 4px 0;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>DeepEyeFlyAI</h1>
+        <ul class="topnav">
+            <li><a href="{{ url_for('newflyweb') }}">Home</a></li>
+            <li><a href="{{ url_for('fprocess') }}">The Process</a></li>
+            <li><a href="{{ url_for('newflyupload') }}">Upload for Eye</a></li>
+            <li><a href="{{ url_for('ODA') }}">Upload for Odometry</a></li>
+            <li><a href="{{ url_for('flywelfare') }}">Fly Welfare</a></li>
+            <li><a href="{{ url_for('resultsf') }}">Eye Head Results</a></li>
+            <li><a href="{{ url_for('oda_results') }}">ODA Results</a></li>
+            <li><a href="{{ url_for('timespan') }}">Timespan Viewer</a></li>
+            <li><a href="{{ url_for('export') }}">Export Data</a></li>
+
+            {% if session.get("user") %}
+                <li class="right">
+                    <a href="{{ url_for('logout') }}">Logout ({{ session.get("user") }})</a>
+                </li>
+            {% else %}
+                <li class="right">
+                    <a href="{{ url_for('flogin') }}">Login</a>
+                </li>
+            {% endif %}
+        </ul>
+
+        <h1>Upload ODA Folder</h1>
+        <center>
+            <a href="/ODA" class="upload-btn">Click here to swap to individual image mode</a>
+        </center>
+
+        <form action="/odafolder" method="post" enctype="multipart/form-data" class="upload-form">
+            <div class="image-preview" id="imagePreview">
+                <span>Please upload folder/images for ODA!</span>
+            </div>
+        
+            <input type="file" id="myFile" name="files" multiple webkitdirectory directory style="display:none;" onchange="updateFileList()">
+            
+            <ul id="fileList" style="display:none;"></ul>
+
+            <label for="metadataFile" class="upload-btn">Upload Metadata File (Optional)</label>
+            <input type="file" id="metadataFile" name="metadata_file" accept=".json,.csv,.txt" class="upload-btn">
+        
+            {% if session.get("user") %}
+                <select name="image_origin" class="upload-btn" required>
+                    <option value="">Select Country</option>
+                    {% for country in countries %}
+                        <option value="{{ country }}">{{ country }}</option>
+                    {% endfor %}
+                </select>
+                <input type="date" name="image_date" class="upload-btn" required>
+                <br>
+        
+                Real world image width:
+                <input type="number" name="image_size" class="upload-btn" placeholder="1" min="1" max="9999" required>
+        
+                <select name="image_scale" class="upload-btn" required>
+                    <option value="nm">nanometer (nm)</option>
+                    <option value="um">micrometer (μm)</option> 
+                </select>
+        
+                <select name="type_of_image" class="upload-btn" required>
+                    <option value="full_image">Full image width</option>
+                    <option value="per_pixel">Per pixel width</option> 
+                </select>
+        
+                <br>
+        
+                <label for="myFile" class="upload-btn">Upload Folder / Images</label>
+                <button type="submit" id="analyseBtn" class="upload-btn" style="display:none;">Analyse Images</button>
+                <button type="button" id="changeBtn" class="upload-btn" style="display:none;" onclick="clearFiles()">Unselect</button>
+        
+            {% else %}
+                <a href="/login" class="upload-btn">PLEASE LOGIN TO UPLOAD IMAGES</a>
+            {% endif %}
+        </form>
+
+        {% if message %}
+            <p class="upload-message">{{ message }}</p>
+        {% endif %}
+
+        {% if oda_stats %}
+        <div id="editormodal" class="open">
+            <div class="modal-box">
+                <h2>ODA Analysis Results</h2>
+                
+                {% if queue_index is defined %}
+                    <span class="queue-badge">Image {{ queue_index + 1 }} of {{ queue_total }}</span>
+                {% endif %}
+
+                <p>Analysis complete for: <strong>{{ oda_stats.filename }}</strong></p>
+
+                <div class="modal-preview">
+                    <img src="{{ url_for('static', filename='ODA/results/' + oda_stats.heatmap_fn) }}" alt="ODA Heatmap">
+                </div>
+
+                <div class="modal-stats">
+                    <div>
+                        <span class="mstat-val">{{ oda_stats.ommatidia_count }}</span>
+                        <span class="mstat-lbl">Count</span>
+                    </div>
+                    <div>
+                        <span class="mstat-val">{{ "%.2f"|format(oda_stats.ommatidial_diameter) }}</span>
+                        <span class="mstat-lbl">Avg. Dia (μm)</span>
+                    </div>
+                </div>
+
+                <div class="modal-btns">                    
+                    {% if queue_total is defined and (queue_index + 1) < queue_total %}
+                        <button class="mbtn mbtn-skip" onclick="location.href='/save_odaf_next'">Next Image</button>
+                        <button 
+                            class="mbtn mbtn-skip" 
+                            onclick="if(confirm('Are you sure you want to skip manual comparison and process all remaining images?')) { location.href='/skip_to_results_oda'; }">
+                            Skip to Results
+                        </button>
+                    {% else %}
+                        <button class="mbtn mbtn-skip" onclick="location.href='/save_odaf_next'">Finish & Save</button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <script>
+            function updateFileList() {
+                const input = document.getElementById('myFile');
+                const list = document.getElementById('fileList');
+                const analyseBtn = document.getElementById('analyseBtn');
+                const changeBtn = document.getElementById('changeBtn');
+                
+                list.innerHTML = '';
+                if (input.files.length > 0) {
+                    list.style.display = 'block';
+                    analyseBtn.style.display = 'inline-block';
+                    changeBtn.style.display = 'inline-block';
+                    
+                    // Logic to list folder contents
+                    Array.from(input.files).slice(0, 10).forEach(file => {
+                        let li = document.createElement('li');
+                        li.textContent = file.webkitRelativePath || file.name;
+                        list.appendChild(li);
+                    });
+                    if(input.files.length > 10) {
+                        let li = document.createElement('li');
+                        li.textContent = "... and " + (input.files.length - 10) + " more files.";
+                        list.appendChild(li);
+                    }
+                }
+            }
+
+            function clearFiles() {
+                document.getElementById('myFile').value = '';
+                document.getElementById('fileList').style.display = 'none';
+                document.getElementById('analyseBtn').style.display = 'none';
+                document.getElementById('changeBtn').style.display = 'none';
+                document.getElementById('fileList').innerHTML = '';
+            }
+        </script>
+
+        <script src="{{ url_for('static', filename='UTIF.js') }}"></script>
+        <script src="{{ url_for('static', filename='script.js') }}"></script>
+    </body>
+</html>

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <title>Compare ODA Results</title>
+    <style>
+        .compare-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .stat-box {
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            border-left: 4px solid #ff3300;
+        }
+        .stat-val {
+            display: block;
+            font-size: 18px;
+            font-weight: bold;
+            color: #ff3300;
+        }
+        .stat-lbl {
+            font-size: 10px;
+            text-transform: uppercase;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="text-align:center;">Compare ODA Analyses</h1>
+
+    <div style="display:flex; justify-content:center; gap:50px; margin-top:30px; flex-wrap: wrap;">
+        
+        <div style="text-align:center; max-width: 450px;">
+            <img src="/{{ image1['annotated_image'] }}" width="450" alt="ODA Heatmap 1" style="border-radius: 8px;">
+            <h3>Analysis Details</h3>
+            <p><strong>Location:</strong> {{ image1['image_origin'] }}</p>
+            <p><strong>Date:</strong> {{ image1['image_date'] }}</p>
+            
+            <div class="oda-grid">
+                <div class="stat-box">
+                    <span class="stat-val">{{ data1.stats.count }}</span>
+                    <span class="stat-lbl">Count</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-val">{{ "%.2f"|format(data1.stats.diameter) }}</span>
+                    <span class="stat-lbl">Avg Dia (μm)</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-val">±{{ "%.2f"|format(data1.stats.sd) }}</span>
+                    <span class="stat-lbl">Std. Dev</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-val">{{ data1.stats.area }}</span>
+                    <span class="stat-lbl">Area (μm²)</span>
+                </div>
+            </div>
+        </div>
+
+        <div style="text-align:center; max-width: 450px;">
+            <img src="/{{ image2['annotated_image'] }}" width="450" alt="ODA Heatmap 2" style="border-radius: 8px;">
+            <h3>Analysis Details</h3>
+            <p><strong>Location:</strong> {{ image2['image_origin'] }}</p>
+            <p><strong>Date:</strong> {{ image2['image_date'] }}</p>
+            
+            <div class="oda-grid">
+                <div class="stat-box">
+                    <span class="stat-val">{{ data2.stats.count }}</span>
+                    <span class="stat-lbl">Count</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-val">{{ "%.2f"|format(data2.stats.diameter) }}</span>
+                    <span class="stat-lbl">Avg Dia (μm)</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-val">±{{ "%.2f"|format(data2.stats.sd) }}</span>
+                    <span class="stat-lbl">Std. Dev</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-val">{{ data2.stats.area }}</span>
+                    <span class="stat-lbl">Area (μm²)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div style="text-align:center; margin-top:50px; margin-bottom: 50px;">
+        <a href="{{ url_for('oda_results') }}" class="upload-btn">Back to ODA Records</a>
+    </div>
+</body>
+</html>

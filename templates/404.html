@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+        <title> DeepEyeFlyAI </title>
+    </head>
+
+    <body>
+        <h1>DeepEyeFlyAI</h1>
+
+        <ul class="topnav">
+            <li><a href="{{ url_for('newflyweb') }}">Home</a></li>
+            <li><a href="{{ url_for('fprocess') }}">The Process</a></li>
+            <li><a href="{{ url_for('newflyupload') }}">Upload for Eye</a></li>
+            <li><a href="{{ url_for('ODA') }}">Upload for Odometry</a></li>
+            <li><a href="{{ url_for('flywelfare') }}">Fly Welfare</a></li>
+            <li><a href="{{ url_for('resultsf') }}">Eye Head Results</a></li>
+            <li><a href="{{ url_for('oda_results') }}">ODA Results</a></li>
+            <li><a href="{{ url_for('timespan') }}">Timespan Viewer</a></li>
+            <li><a href="{{ url_for('export') }}">Export Data</a></li>
+
+            {% if session.get("user") %}
+                <li class="right">
+                    <a href="{{ url_for('logout') }}">Logout ({{ session.get("user") }})</a>
+                </li>
+                {% else %}
+                 <li class="right">
+                    <a href="{{ url_for('flogin') }}">Login</a>
+                </li>
+            {% endif %}
+            
+        </ul> 
+
+        <h1>404</h1>
+
+        <div class="content-row">
+            <img src="{{ url_for('static', filename='images/noeyess.png') }}" alt="eyes" width="500" class="image-padding">
+
+            <div class="text-box">
+                <h2>No Fly eyes found here</h2>
+                <p>
+                Oops, you tried to enter a page that doesn't exist, use the above links to return to the tools.
+                </p>
+                <p>
+                HTTPS 404 error, file not found
+                </p>
+            </div>
+        </div>
+    </body>
+</html>

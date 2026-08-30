@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+    <!-- Page where users uplaod fly images -->
+    <head>
+        <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+        <title> DeepEyeFlyAI </title>
+    </head>
+    <body>
+        <h1>DeepEyeFlyAI</h1>
+        <ul class="topnav">
+            <li><a href="{{ url_for('newflyweb') }}">Home</a></li>
+            <li><a href="{{ url_for('fprocess') }}">The Process</a></li>
+            <li><a href="{{ url_for('newflyupload') }}">Upload for Eye</a></li>
+            <li><a href="{{ url_for('ODA') }}">Upload for Odometry</a></li>
+            <li><a href="{{ url_for('flywelfare') }}">Fly Welfare</a></li>
+            <li><a href="{{ url_for('resultsf') }}">Eye Head Results</a></li>
+            <li><a href="{{ url_for('oda_results') }}">ODA Results</a></li>
+            <li><a href="{{ url_for('timespan') }}">Timespan Viewer</a></li>
+            <li><a href="{{ url_for('export') }}">Export Data</a></li>
+            
+            {% if session.get("user") %}
+                <li class="right">
+                    <a href="{{ url_for('logout') }}">Logout ({{ session.get("user") }})</a>
+                </li>
+            {% else %}
+                <li class="right">
+                    <a href="{{ url_for('flogin') }}">Login</a>
+                </li>
+            {% endif %}
+        </ul> 
+
+        <h1>Upload Folder</h1>
+        <center>
+            <a href="/newflyupload" class="upload-btn">Click here to swap to individual image upload</a>
+        </center>
+
+        <form action="/fuploadfolder" method="post" enctype="multipart/form-data" class="upload-form">
+            <div class="image-preview" id="imagePreview">
+                <span>Please upload images!</span>
+            </div>
+        
+            <!-- MULTIPLE FILE / FOLDER UPLOAD -->
+            <input type="file" id="myFile" name="files" multiple webkitdirectory directory style="display:none;">
+        
+            <!-- OPTIONAL METADATA FILE -->
+            <label for="metadataFile" class="upload-btn">Upload Metadata File (Optional)</label>
+            <input type="file" id="metadataFile" name="metadata_file" accept=".json,.csv,.txt" class="upload-btn">
+        
+            {% if session.get("user") %}
+                <select name="image_origin" class="upload-btn" required>
+                    <option value="">Select Country</option>
+                    {% for country in countries %}
+                        <option value="{{ country }}">{{ country }}</option>
+                    {% endfor %}
+                </select>
+                <input type="date" name="image_date" class="upload-btn" required>
+                <br>
+        
+                Real world image width:
+                <input type="number" name="image_size" class="upload-btn" placeholder="1" min="1" max="9999" required>
+        
+                <select name="image_scale" class="upload-btn" required>
+                    <option value="nm">nanometer (nm)</option>
+                    <option value="um">micrometer (μm)</option> 
+                </select>
+        
+                <select name="type_of_image" class="upload-btn" required>
+                    <option value="full_image">Full image width</option>
+                    <option value="per_pixel">Per pixel width</option> 
+                </select>
+        
+                <br>
+        
+                <!-- BUTTON TO SELECT FOLDER -->
+                <label for="myFile" class="upload-btn">Upload Folder / Images</label>
+        
+                <button type="submit" id="analyseBtn" class="upload-btn">Analyse Images</button>
+        
+            {% else %}
+                <a href="/login" class="upload-btn">PLEASE LOGIN TO UPLOAD IMAGES</a>
+            {% endif %}
+        </form>
+
+        {% if message %}
+            <p class="upload-message">{{ message }}</p>
+        {% endif %}
+
+        {% if annotated_image %}
+            <div style="text-align:center; margin-top:20px;">
+                <h2>Analysis Result</h2>
+                <img src="/static/uploads/{{ annotated_image.split('/')[-1].split('\\')[-1] }}" width="500">
+                {% if detections %}
+                    <p><strong>Parts Detected:</strong> {{ detections|length }}</p>
+                    <p><strong>Average Confidence:</strong> {{ (detections | map(attribute='confidence') | list | sum / detections|length * 100) | round(2) }}%</p>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        
+        <script src="{{ url_for('static', filename='UTIF.js') }}"></script>
+        <script src="{{ url_for('static', filename='script.js') }}"></script>
+    </body>
+</html>

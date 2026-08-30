@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <title>ODA Folder Results</title>
+</head>
+<body>
+
+<h1 style="text-align:center;">ODA Folder Analysis Results</h1>
+
+{% if session.get("user") %}
+
+<div style="margin-bottom: 20px; display: flex; gap: 15px; justify-content: center;">
+    <button type="button" id="filterBtn" class="upload-btn">Filter Results</button>
+    <button type="button" id="selectBtn" class="upload-btn">Select Images</button>
+</div>
+
+<div id="filterOptions" style="display:none; text-align:center; margin-bottom:20px;">
+    <div style="margin-bottom:15px;">
+        <label>
+            Min Ommatidia:
+            <input type="number" id="filterCountMin" min="0" placeholder="0">
+        </label>
+        <label>
+            Max Ommatidia:
+            <input type="number" id="filterCountMax" min="0" placeholder="5000">
+        </label>
+    </div>
+    <button type="button" id="applyFilters">Apply Filters</button>
+    <button type="button" id="removeFilters" style="display:none;">Remove Filters</button>
+</div>
+
+<hr style="margin: 30px 0; border: 2px solid white;">
+
+{% for img in images %}
+<div class="content-container">
+
+    <div class="content-row"
+         style="position: relative;"
+         data-country="{{ img.metadata.origin }}"
+         data-date="{{ img.metadata.date }}"
+         data-count="{{ img.oda_stats.ommatidia_count }}"
+         data-diameter="{{ img.oda_stats.ommatidial_diameter }}">
+
+        <input type="checkbox" class="select-checkbox" data-id="{{ loop.index0 }}">
+
+        <img src="/static/ODA/results/{{ img.oda_stats.heatmap_fn }}" width="500" class="image-padding">
+
+        <div class="text-box">
+            <h2>ODA Result</h2>
+            <p><strong>File:</strong> {{ img.oda_stats.filename }}</p>
+            <p><strong>Location:</strong> {{ img.metadata.origin }}</p>
+            <p><strong>Date:</strong> {{ img.metadata.date }}</p>
+
+            <hr style="border: 1px solid #ff3300; width: 50%; margin: 10px 0;">
+
+            <p style="font-size: 1.2em;">
+                <strong>Ommatidia Count:</strong> 
+                <span style="color: #ff3300; font-weight: bold;">{{ img.oda_stats.ommatidia_count }}</span>
+            </p>
+            <p>
+                <strong>Avg. Diameter:</strong> 
+                {{ "%.2f"|format(img.oda_stats.ommatidial_diameter) }} {{ img.metadata.scale }}
+            </p>
+            <p><strong>Eye Area:</strong> {{ img.oda_stats.eye_area }} px²</p>
+
+            <button type="button" class="upload-btn" onclick="location.href='/oda_detail/{{ loop.index0 }}'">
+                View Full Details
+            </button>
+        </div>
+
+    </div>
+
+    <hr style="margin: 30px 0; border: 2px solid white;">
+
+</div>
+{% endfor %}
+
+<div style="text-align:center; margin-bottom:30px; display:flex; justify-content:center; gap:20px;">
+    <a href="{{ url_for('odafolder') }}" class="upload-btn">
+        Upload Another ODA Folder
+    </a>
+    <button type="button" id="exportSelectedBtn" class="upload-btn">
+        Export Selected CSV/Data
+    </button>
+</div>
+
+{% else %}
+<div style="text-align:center;">
+    <a href="/login" class="upload-btn">PLEASE LOGIN TO VIEW RESULTS</a>
+</div>
+{% endif %}
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+
+</body>
+</html>

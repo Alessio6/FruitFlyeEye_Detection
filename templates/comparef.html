@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+    <!-- Page where two results are compared -->
+<head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <title>Compare Fly Images</title>
+</head>
+<body>
+    <h1 style="text-align:center;">Compare Fly Images</h1>
+
+    <div style="display:flex; justify-content:center; gap:50px; margin-top:30px;">
+        
+        <div style="text-align:center;">
+            <img src="{{ url_for('static', filename=image1['annotated_image'].replace('static/', '')) }}" width="400" alt="Fly Image 1">
+            <h3>Image Details</h3>
+            <p><strong>Location:</strong> {{ image1['image_origin'] }}</p>
+            <p><strong>Date Taken:</strong> {{ image1['image_date'] }}</p>
+            <p><strong>Parts Detected:</strong> {{ stats1['Parts_Detected'] }}</p>
+            <p><strong>Average Confidence:</strong> {{ stats1['Average_Confidence'] }}%</p>
+        </div>
+
+        <div style="text-align:center;">
+            <img src="{{ url_for('static', filename=image2['annotated_image'].replace('static/', '')) }}" width="400" alt="Fly Image 2">
+            <h3>Image Details</h3>
+            <p><strong>Location:</strong> {{ image2['image_origin'] }}</p>
+            <p><strong>Date Taken:</strong> {{ image2['image_date'] }}</p>
+            <p><strong>Parts Detected:</strong> {{ stats2['Parts_Detected'] }}</p>
+            <p><strong>Average Confidence:</strong> {{ stats2['Average_Confidence'] }}%</p>
+        </div>
+    </div>
+
+    <div style="text-align:center; margin-top:30px;">
+        <a href="{{ url_for('resultsf') }}" class="upload-btn">Back to Results</a>
+    </div>
+</body>
+</html>

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <title>Feature Variation over time</title>
+</head>
+
+<body>
+    <h1>DeepEyeFlyAI</h1>
+
+    <ul class="topnav">
+        <li><a href="{{ url_for('newflyweb') }}">Home</a></li>
+        <li><a href="{{ url_for('fprocess') }}">The Process</a></li>
+        <li><a href="{{ url_for('newflyupload') }}">Upload for Eye</a></li>
+        <li><a href="{{ url_for('ODA') }}">Upload for Odometry</a></li>
+        <li><a href="{{ url_for('flywelfare') }}">Fly Welfare</a></li>
+        <li><a href="{{ url_for('resultsf') }}">Eye Head Results</a></li>
+        <li><a href="{{ url_for('oda_results') }}">ODA Results</a></li>
+        <li><a href="{{ url_for('timespan') }}">Timespan Viewer</a></li>
+        <li><a href="{{ url_for('export') }}">Export Data</a></li>
+
+        {% if session.get("user") %}
+        <li class="right">
+            <a href="{{ url_for('logout') }}">Logout ({{ session.get("user") }})</a>
+        </li>
+        {% else %}
+        <li class="right">
+            <a href="{{ url_for('flogin') }}">Login</a>
+        </li>
+        {% endif %}
+    </ul>
+
+    <h1>Visualisation Range</h1>
+
+    {% if session.get("user") %}
+    <form action="{{ url_for('timespan') }}" method="POST">
+        <div id="filterOptions" style="display:block; text-align:center; margin-bottom:20px;">
+            <div style="margin-bottom:15px;">
+                <label>
+                    Country:
+                    <select id="filterCountry">
+                        <option value="" disabled selected>Choose a country</option>
+                        {% for country in countries %}
+                        <option value="{{ country }}">{{ country }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <div id="selectedCountriesContainer" style="margin-top:10px;"></div>
+                <input type="hidden" id="selectedCountriesInput" name="selected_countries">
+            </div>
+
+            <div style="margin-bottom:15px;">
+                <label>
+                    Date From:
+                    <input type="date" id="date_earliest" name="date_earliest" class="upload-btn">
+                </label>
+                <label>
+                    Date To:
+                    <input type="date" id="date_latest" name="date_latest" class="upload-btn">
+                </label>
+            </div>
+
+            <div style="margin-bottom:15px;">
+                <label>
+                    Part:
+                    <select id="filterpart">
+                        <option value="" disabled selected>Choose parts</option>
+                        {% for part in parts %}
+                        <option value="{{ part }}">{{ part }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <div id="selectedPartsContainer" style="margin-top:10px;"></div>
+                <input type="hidden" id="selectedPartsInput" name="selected_parts">
+            </div>
+
+            <button type="submit" id="applyFilters" class="upload-btn">Apply Filters</button>
+        </div>
+
+        <div style="width: 80%; margin: auto;">
+            <canvas id="flyGraph"></canvas>
+        </div>
+
+        <script>
+            // --- Country Selection Logic ---
+            const countrySelect = document.getElementById('filterCountry');
+            const container = document.getElementById('selectedCountriesContainer');
+            const hiddenInput = document.getElementById('selectedCountriesInput');
+            let selectedCountries = [];
+
+            countrySelect.addEventListener('change', function() {
+                const val = this.value;
+                if (val && !selectedCountries.includes(val)) {
+                    selectedCountries.push(val);
+                    updateCountryTags();
+                }
+            });
+
+            function updateCountryTags() {
+                container.innerHTML = '';
+                selectedCountries.forEach(country => {
+                    const tag = document.createElement('span');
+                    tag.style = "background:#ddd; padding:5px; margin:5px; border-radius:3px; display:inline-block;";
+                    tag.innerHTML = `${country} <span style="cursor:pointer; color:red" onclick="removeCountry('${country}')">&times;</span>`;
+                    container.appendChild(tag);
+                });
+                hiddenInput.value = JSON.stringify(selectedCountries);
+            }
+
+            window.removeCountry = function(country) {
+                selectedCountries = selectedCountries.filter(c => c !== country);
+                updateCountryTags();
+            }
+            
+            // --- Part Selection Logic ---
+            const partSelect = document.getElementById('filterpart');
+            const pcontainer = document.getElementById('selectedPartsContainer'); // Fixed ID
+            const phiddenInput = document.getElementById('selectedPartsInput');   // Fixed ID
+            let selectedParts = []; // Standardized camelCase
+
+            partSelect.addEventListener('change', function() {
+                const val = this.value;
+                if (val && !selectedParts.includes(val)) {
+                    selectedParts.push(val);
+                    updatePartTags();
+                }
+            });
+
+            function updatePartTags() {
+                pcontainer.innerHTML = ''; // Now clears the correct part container
+                selectedParts.forEach(part => {
+                    const tag = document.createElement('span');
+                    tag.style = "background:#ddd; padding:5px; margin:5px; border-radius:3px; display:inline-block;";
+                    // Updated to call removePart
+                    tag.innerHTML = `${part} <span style="cursor:pointer; color:red" onclick="removePart('${part}')">&times;</span>`;
+                    pcontainer.appendChild(tag); // Now appends to the correct part container
+                });
+                phiddenInput.value = JSON.stringify(selectedParts);
+            }
+
+            window.removePart = function(part) {
+                selectedParts = selectedParts.filter(p => p !== part);
+                updatePartTags();
+            }
+
+
+            // --- Chart.js Logic ---
+            const ctx = document.getElementById('flyGraph').getContext('2d');
+            const datasets = [
+                {% for label, data in datasets.items() %}
+                {
+                    label: "{{ label }}",
+                    data: {{ data | tojson }},
+                    borderColor: '#' + Math.floor(Math.random() * 16777215).toString(16),
+                    backgroundColor: 'rgba(0,0,0,0.5)',
+                    showLine: false,
+                    spanGaps: true
+                },
+                {% endfor %}
+            ];
+
+            new Chart(ctx, {
+                type: 'scatter',
+                data: { datasets: datasets },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: { unit: 'day' },
+                            title: { display: true, text: 'Date' }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Area of Feature um^2' }
+                        }
+                    }
+                }
+            });
+        </script>
+    </form>
+    {% else %}
+    <div style="text-align:center;">
+        <a href="/login" class="upload-btn">PLEASE LOGIN TO SEE TIMESPAN</a>
+    </div>
+    {% endif %}
+</body>
+</html>

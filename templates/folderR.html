@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+    <!-- Results page folder upload -->
+<head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <title>Folder Results</title>
+</head>
+<body>
+
+<h1 style="text-align:center;">Folder Upload Results</h1>
+
+{% if session.get("user") %}
+
+<!-- TOP ACTION BUTTONS -->
+<div style="margin-bottom: 20px; display: flex; gap: 15px; justify-content: center;">
+    <button type="button" id="filterBtn" class="upload-btn">Filter Images</button>
+    <button type="button" id="selectBtn" class="upload-btn">Select Images</button>
+</div>
+
+<!-- FILTER OPTIONS -->
+<div id="filterOptions" style="display:none; text-align:center; margin-bottom:20px;">
+
+    <div style="margin-bottom:15px;">
+        <label>
+            Min Confidence (%):
+            <input type="number" id="filterConfidenceMin" min="0" max="100" placeholder="0">
+        </label>
+        <label>
+            Max Confidence (%):
+            <input type="number" id="filterConfidenceMax" min="0" max="100" placeholder="100">
+        </label>
+    </div>
+
+    <button type="button" id="applyFilters">Apply Filters</button>
+    <button type="button" id="removeFilters" style="display:none;">Remove Filters</button>
+</div>
+
+<hr style="margin: 30px 0; border: 2px solid white;">
+
+{% for img in images %}
+<div class="content-container">
+
+    <div class="content-row"
+    style="position: relative;"
+     data-country="{{ img.image_origin }}"
+     data-date="{{ img.image_date }}"
+     data-confidence="{{
+        (
+            (img.detections | map(attribute='confidence') | list | sum / img.detections|length * 100)
+            if img.detections|length > 0 
+            else 0
+        ) | round(2)
+    }}"
+
+        <!-- Checkbox -->
+        <input type="checkbox" class="select-checkbox" data-id="{{ loop.index0 }}">
+
+        <!-- Image -->
+        <img src="/static/uploads/{{ img.annotated_image or img.image_name }}?v={{ loop.index0 }}" width="500" class="image-padding">
+
+
+        <!-- Details -->
+        <div class="text-box">
+            <h2>Analysis Result</h2>
+
+            <p><strong>Location:</strong> {{ img.image_origin }}</p>
+            <p><strong>Date:</strong> {{ img.image_date }}</p>
+
+            <p><strong>Parts Detected:</strong> {{ img.detections|length }}</p>
+
+            <p>
+                <strong>Average Confidence:</strong>
+                {{
+                    (
+                        (img.detections | map(attribute='confidence') | list | sum / img.detections|length * 100) 
+                        if img.detections|length > 0 
+                        else 0
+                    ) | round(2)
+                }}%
+            </p>
+
+            <button type="button" class="upload-btn edit-polygon-btn" data-id="{{ loop.index0 }}">
+                Edit Polygon
+            </button>
+        </div>
+
+    </div>
+
+    <hr style="margin: 30px 0; border: 2px solid white;">
+
+</div>
+{% endfor %}
+
+<!-- BOTTOM BUTTONS -->
+<div style="text-align:center; margin-bottom:30px; display:flex; justify-content:center; gap:20px;">
+
+    <a href="{{ url_for('fuploadfolder') }}" class="upload-btn">
+        Upload Another Folder
+    </a>
+
+    <button type="button" id="exportSelectedBtn" class="upload-btn">
+        Export Selected Data
+    </button>
+
+</div>
+
+{% else %}
+<div style="text-align:center;">
+    <a href="/login" class="upload-btn">PLEASE LOGIN TO VIEW RESULTS</a>
+</div>
+{% endif %}
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+
+</body>
+</html>
