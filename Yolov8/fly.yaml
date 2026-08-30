@@ -1,0 +1,14 @@
+
+path: '/Users/alessiomaggio/Msc Artificial Intelligence/Semester 2/Group software project/Test/head images electron microscopy/eye size assessment'
+train: '/Users/alessiomaggio/Msc Artificial Intelligence/Semester 2/Group software project/Test/train'
+val: '/Users/alessiomaggio/Msc Artificial Intelligence/Semester 2/Group software project/Test/validation'
+test: # test images (optional)
+
+# Classes
+names:
+  0: left eye
+  1: right eye
+
+
+# Download script/URL (optional)
+download: https://github.com/ultralytics/assets/releases/download/v0.0.0/coco8.zip
